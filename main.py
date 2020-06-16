@@ -1,3 +1,6 @@
+#Flappy Bird Game on 15/6/2020 by Darshan Salecha
+#install pygame library
+
 import random  # for generating random numbers
 import sys   # wwe will use sys.exit to exit the program
 import pygame
@@ -7,7 +10,7 @@ from pygame.locals import *
 
 # GlOBAL VARIABALES for game
 FPS=32
-SCREENWIDTH=289
+SCREENWIDTH=289   #screen size
 SCREENHEIGHT=511
 
 
@@ -16,10 +19,10 @@ GROUNDY=SCREENHEIGHT*0.8
 GAME_SPRITES={}
 GAME_SOUNDS={}
 PLAYER='Gallery/pics/bird.png'
-BACKGROUND='Gallery/pics/background.png'
+BACKGROUND='Gallery/pics/background.png'               #Define path of pictures
 PIPE='Gallery/pics/pipe.png'
 
-
+#welcome message screen
 def welcomeScreen():
     playerx=int(SCREENWIDTH/5)
     playery=int((SCREENHEIGHT-GAME_SPRITES['player'].get_height())/2)
@@ -42,11 +45,13 @@ def welcomeScreen():
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
-class example:
-  HIGHSCORE = 0
+class example:    #define class for high score in every play
+  HIGHSCORE = 0       #highscore as static variable
 instance = example()
 
 
+
+#main game function
 def mainGame():
 
     score=0
@@ -225,7 +230,7 @@ if __name__ == '__main__':
     GAME_SPRITES['background']=pygame.image.load(BACKGROUND).convert_alpha()
     GAME_SPRITES['player']=pygame.image.load(PLAYER).convert_alpha()
 
-
+# game to continue loop
     while True:
         welcomeScreen() #shows welcome screen to user until he presses a button
         #
