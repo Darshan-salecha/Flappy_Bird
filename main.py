@@ -6,54 +6,94 @@ import sys   # wwe will use sys.exit to exit the program
 import pygame
 import time
 from pygame.locals import *
-
+import os
 
 # GlOBAL VARIABALES for game
 FPS=32
-SCREENWIDTH=289   #screen size
+SCREENWIDTH=289
 SCREENHEIGHT=511
 
 
+pygame.init()
 SCREEN=pygame.display.set_mode((SCREENWIDTH,SCREENHEIGHT))
 GROUNDY=SCREENHEIGHT*0.8
 GAME_SPRITES={}
 GAME_SOUNDS={}
 PLAYER='Gallery/pics/bird.png'
-BACKGROUND='Gallery/pics/background.png'               #Define path of pictures
+BACKGROUND='Gallery/pics/background.png'
 PIPE='Gallery/pics/pipe.png'
 
-#welcome message screen
-def welcomeScreen():
+#creating files if not exists
+
+if not os.path.exists("FB_Highscore.txt"):
+    with open("FB_Highscore.txt", "w") as f:
+        f.write("0")
+if not os.path.exists("FB_USER.txt"):
+    with open("FB_USER.txt", "w") as f:
+        f.write("")
+
+
+font = pygame.font.Font(None,24)
+def text_screen(text, color, x, y):
+    screen_text = font.render(text, True, color)
+    SCREEN.blit(screen_text, [x,y])
+
+input_rect=pygame.Rect(125,355,140,28)      #rectangle for user's input
+
+P_color=pygame.Color('gray15')
+color=P_color
+
+def welcomeScreen(USER):
+    #print(USER)
     playerx=int(SCREENWIDTH/5)
     playery=int((SCREENHEIGHT-GAME_SPRITES['player'].get_height())/2)
     messagex=int((SCREENWIDTH-GAME_SPRITES['message'].get_width())/2)
     messagey=int(SCREENHEIGHT*0.13)
     basex=0
     time.sleep(1)
+    with open("FB_Highscore.txt","r") as f:
+        HIGHSCORE = f.read()
+    with open("FB_USER.txt","r") as f:
+        old_user = f.read()
     while True:
+        xoffset1=20
         for event in pygame.event.get():
             if event.type==QUIT or (event.type==KEYDOWN and event.key==K_ESCAPE):
                 pygame.quit()
                 sys.exit()
-            elif event.type==KEYDOWN and (event.key==K_SPACE or event.key==K_UP):
-                return
+            elif event.type==KEYDOWN and (event.key==K_SPACE or event.key==K_UP or event.key==pygame.K_RETURN):
+                return USER
+
+            elif event.type==pygame.KEYDOWN:
+                  if event.key==pygame.K_BACKSPACE:
+                      USER=USER[:-1]
+                  else:
+                      USER+=event.unicode
+
 
         SCREEN.blit(GAME_SPRITES['background'],(0,0))
         SCREEN.blit(GAME_SPRITES['player'],(playerx,playery))
         SCREEN.blit(GAME_SPRITES['message'],(messagex,messagey))
         SCREEN.blit(GAME_SPRITES['base'],(basex,int(GROUNDY)))
+        SCREEN.blit(GAME_SPRITES['highscore'], (20, 465))
+        HighDigits = [int(x) for x in list(str(HIGHSCORE))]
+        for HighDigit in HighDigits:
+            SCREEN.blit(GAME_SPRITES['numbers'][HighDigit], (xoffset1 + 100, 460))
+            xoffset1 += GAME_SPRITES['numbers'][HighDigit].get_width()
+        text_screen("Your-Name:)",(0,0,0),20,360)
+        text_screen(USER,(0,0,0),130,360)
+        pygame.draw.rect(SCREEN,color,input_rect,2)
+        text_screen(old_user, color, 200, 465)
+
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
-class example:    #define class for high score in every play
-  HIGHSCORE = 0       #highscore as static variable
-instance = example()
 
-
-
-#main game function
 def mainGame():
-
+    with open("FB_Highscore.txt", "r") as f:
+        HIGHSCORE = f.read()
+    with open("FB_USER.txt", "r") as f:
+        old_user = f.read()
     score=0
     playerx=int(SCREENWIDTH/5)
     playery=int(SCREENWIDTH/2)
@@ -85,11 +125,24 @@ def mainGame():
     playerFlaped=False
 
     while True:
+       if score==10:
+           pipeVelx=-5
+       elif score==25:
+           pipeVelx=-6
+       elif score==40:
+           pipeVelx=-7
+       elif score==60:
+           pipeVelx=-8
+       elif score>80:
+           pipeVelx=-9
+       elif score>120:
+           pipeVelx=-10
+
        for event in pygame.event.get():
           if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
             pygame.quit()
             sys.exit()
-          if event.type==KEYDOWN and (event.key==K_SPACE or event.key==K_UP):
+          if event.type==KEYDOWN and (event.key==K_SPACE or event.key==K_UP or event.key==K_RETURN):
               if playery>0:
                   playerVelY=playerFlapAccv
                   playerFlaped=True
@@ -97,18 +150,24 @@ def mainGame():
 
        crashtest=isCollide(playerx,playery,upperpipes,lowerpipes)
        if crashtest:
+           with open("FB_Highscore.txt", "w") as f:
+               f.write(str(HIGHSCORE))
+           with open("FB_USER.txt", "w") as f:
+               f.write(old_user)
            return
 
        #check for scrore
        playerMidpos=playerx+GAME_SPRITES['player'].get_width()/2
        for pipe in upperpipes:
            pipeMidpos=pipe['x']+GAME_SPRITES['pipe'][0].get_width()/2
-           if pipeMidpos <= playerMidpos <(pipeMidpos+4):
-               score+=1
+           if pipeMidpos <= playerMidpos <(pipeMidpos+abs(pipeVelx)):
+               score+=1             #checking that player has crossed the pipe or not
                #print(f"your score is{score}")
+
                GAME_SOUNDS['point'].play()
-               if instance.HIGHSCORE<score:
-                   instance.HIGHSCORE=score
+               if int(HIGHSCORE)<score:
+                   HIGHSCORE=score
+                   old_user=USER
 
        if playerVelY<playerMaxVelY and not playerFlaped:
            playerVelY+=playerAccY
@@ -122,7 +181,7 @@ def mainGame():
            upperpipe['x']+=pipeVelx
            lowerpipe['x']+=pipeVelx
 
-       if 0<upperpipes[0]['x'] <5:
+       if 0<upperpipes[0]['x'] <abs(pipeVelx)+1:
            newpipe=getrandomPipe()
            upperpipes.append(newpipe[0])
            lowerpipes.append(newpipe[1])
@@ -141,7 +200,7 @@ def mainGame():
        SCREEN.blit(GAME_SPRITES['highscore'],(20,465))
 
        myDigits=[int(x) for x in list(str(score))]
-       HighDigits=[int(x) for x in list(str(instance.HIGHSCORE))]
+       HighDigits=[int(x) for x in list(str(HIGHSCORE))]
 
        width=0
        for digit in myDigits:
@@ -194,7 +253,6 @@ def getrandomPipe():
 
 
 if __name__ == '__main__':
-    HIGHSCORE = 0
     #this is the main function from where our game will start
     pygame.init()#initialize all pygame's modules
     FPSCLOCK=pygame.time.Clock()
@@ -230,8 +288,9 @@ if __name__ == '__main__':
     GAME_SPRITES['background']=pygame.image.load(BACKGROUND).convert_alpha()
     GAME_SPRITES['player']=pygame.image.load(PLAYER).convert_alpha()
 
-# game to continue loop
+    USER = ""
     while True:
-        welcomeScreen() #shows welcome screen to user until he presses a button
+
+        USER=welcomeScreen(USER) #shows welcome screen to user until he presses a button
         #
         mainGame()
